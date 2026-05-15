@@ -237,19 +237,19 @@ export default function RequestDetail() {
                   }}
                 />
                 <div style={{ flex: 1, textAlign: "center" }}>
-                  <h1 style={{ fontSize: "20px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: 0 }}>
+                  <h1 style={{ fontSize: "18px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.15, margin: 0 }}>
                     KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA
                   </h1>
-                  <h2 style={{ fontSize: "18px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: "4px 0 0" }}>
+                  <h2 style={{ fontSize: "16px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.15, margin: 0 }}>
                     DIREKTORAT JENDERAL PEMASYARAKATAN
                   </h2>
-                  <h2 style={{ fontSize: "18px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: "4px 0 0" }}>
+                  <h2 style={{ fontSize: "16px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.15, margin: 0 }}>
                     KANTOR WILAYAH JAWA BARAT
                   </h2>
-                  <h3 style={{ fontSize: "22px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: "8px 0 0" }}>
+                  <h3 style={{ fontSize: "20px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.15, margin: "2px 0 0" }}>
                     LEMBAGA PEMASYARAKATAN KELAS IIA KUNINGAN
                   </h3>
-                  <p style={{ fontSize: "13px", margin: "8px 0 0" }}>
+                  <p style={{ fontSize: "12px", margin: "4px 0 0" }}>
                     Jl. Siliwangi No. 123, Kuningan, Jawa Barat
                   </p>
                 </div>

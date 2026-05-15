@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Bon Barang Lapas API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: requests
+    description: Goods request operations
+  - name: items
+    description: Item master operations
+  - name: approvals
+    description: Approval operations
+  - name: dashboard
+    description: Dashboard summary operations
+  - name: parse
+    description: AI parsing operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,339 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard stats summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/top-items:
+    get:
+      operationId: getDashboardTopItems
+      tags: [dashboard]
+      summary: Get most requested items
+      responses:
+        "200":
+          description: Top items list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopItem"
+
+  /dashboard/recent-requests:
+    get:
+      operationId: getDashboardRecentRequests
+      tags: [dashboard]
+      summary: Get recent requests
+      responses:
+        "200":
+          description: Recent requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequestSummary"
+
+  /parse:
+    post:
+      operationId: parseRequest
+      tags: [parse]
+      summary: Parse natural language request with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParseInput"
+      responses:
+        "200":
+          description: Parsed items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParseResult"
+
+  /requests:
+    get:
+      operationId: listRequests
+      tags: [requests]
+      summary: List goods requests
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, fulfilled]
+        - name: requesterId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Request"
+    post:
+      operationId: createRequest
+      tags: [requests]
+      summary: Submit a new goods request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestInput"
+      responses:
+        "201":
+          description: Request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+
+  /requests/{id}:
+    get:
+      operationId: getRequest
+      tags: [requests]
+      summary: Get a specific request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Request detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateRequest
+      tags: [requests]
+      summary: Update a request (edit before submission)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+
+  /requests/{id}/approve:
+    post:
+      operationId: approveRequest
+      tags: [approvals]
+      summary: Approve a goods request (Kalapas role)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalInput"
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+
+  /requests/{id}/reject:
+    post:
+      operationId: rejectRequest
+      tags: [approvals]
+      summary: Reject a goods request (Kalapas role)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalInput"
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+
+  /requests/{id}/fulfill:
+    post:
+      operationId: fulfillRequest
+      tags: [approvals]
+      summary: Mark a request as fulfilled
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fulfilled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+
+  /items:
+    get:
+      operationId: listItems
+      tags: [items]
+      summary: List item master
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: q
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+    post:
+      operationId: createItem
+      tags: [items]
+      summary: Create a new item (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+
+  /items/{id}:
+    patch:
+      operationId: updateItem
+      tags: [items]
+      summary: Update an item (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+    delete:
+      operationId: deleteItem
+      tags: [items]
+      summary: Delete an item (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +378,288 @@ components:
       required:
         - status
 
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, username, fullName, role, section]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [admin, kalapas, requester]
+        section:
+          type: string
+        signatureUrl:
+          type: ["string", "null"]
+
+    DashboardSummary:
+      type: object
+      required: [pendingCount, approvedThisMonth, totalRequests, fulfilledCount]
+      properties:
+        pendingCount:
+          type: integer
+        approvedThisMonth:
+          type: integer
+        totalRequests:
+          type: integer
+        fulfilledCount:
+          type: integer
+
+    TopItem:
+      type: object
+      required: [itemName, requestCount, totalQty]
+      properties:
+        itemName:
+          type: string
+        requestCount:
+          type: integer
+        totalQty:
+          type: string
+
+    RequestSummary:
+      type: object
+      required: [id, requesterName, status, createdAt, itemCount]
+      properties:
+        id:
+          type: integer
+        requesterName:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+        itemCount:
+          type: integer
+
+    ParseInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+
+    ParsedItem:
+      type: object
+      required: [no, name, qty, purpose]
+      properties:
+        no:
+          type: integer
+        name:
+          type: string
+        qty:
+          type: string
+        purpose:
+          type: string
+
+    ParseResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParsedItem"
+
+    RequestItem:
+      type: object
+      required: [id, itemName, quantity, unit, purpose, itemNo]
+      properties:
+        id:
+          type: integer
+        itemName:
+          type: string
+        quantity:
+          type: string
+        unit:
+          type: string
+        purpose:
+          type: string
+        itemNo:
+          type: integer
+
+    Request:
+      type: object
+      required: [id, requesterId, status, createdAt, location, requestDate]
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        requesterName:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected, fulfilled]
+        createdAt:
+          type: string
+        location:
+          type: string
+        requestDate:
+          type: string
+        approvedBy:
+          type: ["integer", "null"]
+        approvedAt:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    RequestDetail:
+      type: object
+      required: [id, requesterId, status, createdAt, location, requestDate, items, approvalHistory]
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        requesterName:
+          type: string
+        requesterSection:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected, fulfilled]
+        createdAt:
+          type: string
+        location:
+          type: string
+        requestDate:
+          type: string
+        approvedBy:
+          type: ["integer", "null"]
+        approvedByName:
+          type: ["string", "null"]
+        approvedAt:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestItem"
+        approvalHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApprovalHistory"
+
+    ApprovalHistory:
+      type: object
+      required: [id, action, actorName, timestamp]
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        actorName:
+          type: string
+        notes:
+          type: ["string", "null"]
+        timestamp:
+          type: string
+
+    RequestInput:
+      type: object
+      required: [location, requestDate, items]
+      properties:
+        location:
+          type: string
+        requestDate:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestItemInput"
+
+    RequestItemInput:
+      type: object
+      required: [itemName, quantity, unit, purpose, itemNo]
+      properties:
+        itemName:
+          type: string
+        quantity:
+          type: string
+        unit:
+          type: string
+        purpose:
+          type: string
+        itemNo:
+          type: integer
+
+    RequestUpdate:
+      type: object
+      properties:
+        location:
+          type: string
+        requestDate:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestItemInput"
+
+    ApprovalInput:
+      type: object
+      properties:
+        notes:
+          type: string
+
+    Item:
+      type: object
+      required: [id, name, defaultUnit, category]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        defaultUnit:
+          type: string
+        category:
+          type: string
+        currentStock:
+          type: ["integer", "null"]
+
+    ItemInput:
+      type: object
+      required: [name, defaultUnit, category]
+      properties:
+        name:
+          type: string
+        defaultUnit:
+          type: string
+        category:
+          type: string
+        currentStock:
+          type: ["integer", "null"]
+
+    ItemUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        defaultUnit:
+          type: string
+        category:
+          type: string
+        currentStock:
+          type: ["integer", "null"]

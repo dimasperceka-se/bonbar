@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Bon Barang Lapas"
+version = "1.0.0"
+id = "artifacts/bon-barang"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18542
+
+[services.development]
+run = "pnpm --filter @workspace/bon-barang run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bon-barang", "run", "build" ]
+publicDir = "artifacts/bon-barang/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18542"
+BASE_PATH = "/"

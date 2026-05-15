@@ -1,6 +1,6 @@
 /**
- * Voice chat client utilities for Replit AI Integrations.
- * 
+ * Voice chat client utilities for the OpenAI integration.
+ *
  * Usage:
  * 1. Copy audio-playback-worklet.js to your public/ folder
  * 2. Pass the deployed worklet URL into the hooks

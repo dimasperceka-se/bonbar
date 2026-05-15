@@ -15,8 +15,6 @@ tags:
     description: Goods request operations
   - name: items
     description: Item master operations
-  - name: approvals
-    description: Approval operations
   - name: dashboard
     description: Dashboard summary operations
   - name: parse
@@ -140,11 +138,6 @@ paths:
       tags: [requests]
       summary: List goods requests
       parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [pending, approved, rejected, fulfilled]
         - name: requesterId
           in: query
           schema:
@@ -215,75 +208,6 @@ paths:
       responses:
         "200":
           description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Request"
-
-  /requests/{id}/approve:
-    post:
-      operationId: approveRequest
-      tags: [approvals]
-      summary: Approve a goods request (Kalapas role)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ApprovalInput"
-      responses:
-        "200":
-          description: Approved
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Request"
-
-  /requests/{id}/reject:
-    post:
-      operationId: rejectRequest
-      tags: [approvals]
-      summary: Reject a goods request (Kalapas role)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ApprovalInput"
-      responses:
-        "200":
-          description: Rejected
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Request"
-
-  /requests/{id}/fulfill:
-    post:
-      operationId: fulfillRequest
-      tags: [approvals]
-      summary: Mark a request as fulfilled
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Fulfilled
           content:
             application/json:
               schema:
@@ -416,15 +340,11 @@ components:
 
     DashboardSummary:
       type: object
-      required: [pendingCount, approvedThisMonth, totalRequests, fulfilledCount]
+      required: [thisMonthCount, totalRequests]
       properties:
-        pendingCount:
-          type: integer
-        approvedThisMonth:
+        thisMonthCount:
           type: integer
         totalRequests:
-          type: integer
-        fulfilledCount:
           type: integer
 
     TopItem:
@@ -501,7 +421,7 @@ components:
 
     Request:
       type: object
-      required: [id, requesterId, status, createdAt, location, requestDate]
+      required: [id, requesterId, createdAt, location, requestDate]
       properties:
         id:
           type: integer
@@ -509,25 +429,18 @@ components:
           type: integer
         requesterName:
           type: string
-        status:
-          type: string
-          enum: [pending, approved, rejected, fulfilled]
         createdAt:
           type: string
         location:
           type: string
         requestDate:
           type: string
-        approvedBy:
-          type: ["integer", "null"]
-        approvedAt:
-          type: ["string", "null"]
         notes:
           type: ["string", "null"]
 
     RequestDetail:
       type: object
-      required: [id, requesterId, status, createdAt, location, requestDate, items, approvalHistory]
+      required: [id, requesterId, createdAt, location, requestDate, items]
       properties:
         id:
           type: integer
@@ -537,46 +450,18 @@ components:
           type: string
         requesterSection:
           type: string
-        status:
-          type: string
-          enum: [pending, approved, rejected, fulfilled]
         createdAt:
           type: string
         location:
           type: string
         requestDate:
           type: string
-        approvedBy:
-          type: ["integer", "null"]
-        approvedByName:
-          type: ["string", "null"]
-        approvedAt:
-          type: ["string", "null"]
         notes:
           type: ["string", "null"]
         items:
           type: array
           items:
             $ref: "#/components/schemas/RequestItem"
-        approvalHistory:
-          type: array
-          items:
-            $ref: "#/components/schemas/ApprovalHistory"
-
-    ApprovalHistory:
-      type: object
-      required: [id, action, actorName, timestamp]
-      properties:
-        id:
-          type: integer
-        action:
-          type: string
-        actorName:
-          type: string
-        notes:
-          type: ["string", "null"]
-        timestamp:
-          type: string
 
     RequestInput:
       type: object
@@ -617,12 +502,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RequestItemInput"
-
-    ApprovalInput:
-      type: object
-      properties:
-        notes:
-          type: string
 
     Item:
       type: object

@@ -3,30 +3,24 @@ import { db } from "@workspace/db";
 import {
   requestsTable,
   requestItemsTable,
-  approvalHistoryTable,
   usersTable,
 } from "@workspace/db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import {
   CreateRequestBody,
   UpdateRequestBody,
   UpdateRequestParams,
   GetRequestParams,
-  ApproveRequestParams,
-  ApproveRequestBody,
-  RejectRequestParams,
-  RejectRequestBody,
-  FulfillRequestParams,
   ListRequestsQueryParams,
 } from "@workspace/api-zod";
-import { requireAuth, requireRole } from "../middlewares/auth.js";
+import { requireAuth } from "../middlewares/auth.js";
 
 const router = Router();
 
 // List requests
 router.get("/requests", requireAuth, async (req, res) => {
   const queryParsed = ListRequestsQueryParams.safeParse(req.query);
-  const { status, requesterId } = queryParsed.success ? queryParsed.data : {};
+  const { requesterId } = queryParsed.success ? queryParsed.data : {};
 
   const { role, userId } = req.user!;
 
@@ -35,9 +29,6 @@ router.get("/requests", requireAuth, async (req, res) => {
     conditions.push(eq(requestsTable.requesterId, userId));
   } else if (requesterId) {
     conditions.push(eq(requestsTable.requesterId, requesterId));
-  }
-  if (status) {
-    conditions.push(eq(requestsTable.status, status));
   }
 
   const where = conditions.length > 0
@@ -92,7 +83,7 @@ router.post("/requests", requireAuth, async (req, res) => {
     .insert(requestsTable)
     .values({
       requesterId: req.user!.userId,
-      status: "pending",
+      status: "submitted",
       location,
       requestDate,
     })
@@ -110,13 +101,6 @@ router.post("/requests", requireAuth, async (req, res) => {
       }))
     );
   }
-
-  await db.insert(approvalHistoryTable).values({
-    requestId: newRequest.id,
-    action: "submitted",
-    actorId: req.user!.userId,
-    notes: "Permintaan diajukan",
-  });
 
   const [requester] = await db
     .select({ fullName: usersTable.fullName })
@@ -176,28 +160,6 @@ router.get("/requests/:id", requireAuth, async (req, res) => {
     .where(eq(requestItemsTable.requestId, id))
     .orderBy(requestItemsTable.itemNo);
 
-  const historyRows = await db
-    .select({
-      id: approvalHistoryTable.id,
-      action: approvalHistoryTable.action,
-      notes: approvalHistoryTable.notes,
-      timestamp: approvalHistoryTable.timestamp,
-      actorName: usersTable.fullName,
-    })
-    .from(approvalHistoryTable)
-    .leftJoin(usersTable, eq(approvalHistoryTable.actorId, usersTable.id))
-    .where(eq(approvalHistoryTable.requestId, id))
-    .orderBy(approvalHistoryTable.timestamp);
-
-  let approvedByName: string | null = null;
-  if (row.approvedBy) {
-    const [approver] = await db
-      .select({ fullName: usersTable.fullName })
-      .from(usersTable)
-      .where(eq(usersTable.id, row.approvedBy));
-    approvedByName = approver?.fullName ?? null;
-  }
-
   res.json({
     id: row.id,
     requesterId: row.requesterId,
@@ -208,7 +170,7 @@ router.get("/requests/:id", requireAuth, async (req, res) => {
     location: row.location,
     requestDate: row.requestDate,
     approvedBy: row.approvedBy ?? null,
-    approvedByName,
+    approvedByName: null,
     approvedAt: row.approvedAt?.toISOString() ?? null,
     notes: row.notes ?? null,
     items: items.map((item) => ({
@@ -219,13 +181,7 @@ router.get("/requests/:id", requireAuth, async (req, res) => {
       purpose: item.purpose,
       itemNo: item.itemNo,
     })),
-    approvalHistory: historyRows.map((h) => ({
-      id: h.id,
-      action: h.action,
-      actorName: h.actorName ?? "System",
-      notes: h.notes ?? null,
-      timestamp: h.timestamp.toISOString(),
-    })),
+    approvalHistory: [],
   });
 });
 
@@ -289,137 +245,6 @@ router.patch("/requests/:id", requireAuth, async (req, res) => {
     id: updated.id,
     requesterId: updated.requesterId,
     requesterName: updated.fullName ?? "Unknown",
-    status: updated.status,
-    createdAt: updated.createdAt.toISOString(),
-    location: updated.location,
-    requestDate: updated.requestDate,
-    approvedBy: updated.approvedBy ?? null,
-    approvedAt: updated.approvedAt?.toISOString() ?? null,
-    notes: updated.notes ?? null,
-  });
-});
-
-// Approve request
-router.post("/requests/:id/approve", requireAuth, requireRole("kalapas", "admin"), async (req, res) => {
-  const paramsParsed = ApproveRequestParams.safeParse(req.params);
-  if (!paramsParsed.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  const bodyParsed = ApproveRequestBody.safeParse(req.body);
-  const notes = bodyParsed.success ? bodyParsed.data.notes : undefined;
-
-  const { id } = paramsParsed.data;
-
-  const [updated] = await db
-    .update(requestsTable)
-    .set({
-      status: "approved",
-      approvedBy: req.user!.userId,
-      approvedAt: new Date(),
-    })
-    .where(eq(requestsTable.id, id))
-    .returning();
-
-  if (!updated) {
-    res.status(404).json({ error: "Permintaan tidak ditemukan" });
-    return;
-  }
-
-  await db.insert(approvalHistoryTable).values({
-    requestId: id,
-    action: "approved",
-    actorId: req.user!.userId,
-    notes: notes ?? "Disetujui",
-  });
-
-  res.json({
-    id: updated.id,
-    requesterId: updated.requesterId,
-    status: updated.status,
-    createdAt: updated.createdAt.toISOString(),
-    location: updated.location,
-    requestDate: updated.requestDate,
-    approvedBy: updated.approvedBy ?? null,
-    approvedAt: updated.approvedAt?.toISOString() ?? null,
-    notes: updated.notes ?? null,
-  });
-});
-
-// Reject request
-router.post("/requests/:id/reject", requireAuth, requireRole("kalapas", "admin"), async (req, res) => {
-  const paramsParsed = RejectRequestParams.safeParse(req.params);
-  if (!paramsParsed.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  const bodyParsed = RejectRequestBody.safeParse(req.body);
-  const notes = bodyParsed.success ? bodyParsed.data.notes : undefined;
-
-  const { id } = paramsParsed.data;
-
-  const [updated] = await db
-    .update(requestsTable)
-    .set({ status: "rejected" })
-    .where(eq(requestsTable.id, id))
-    .returning();
-
-  if (!updated) {
-    res.status(404).json({ error: "Permintaan tidak ditemukan" });
-    return;
-  }
-
-  await db.insert(approvalHistoryTable).values({
-    requestId: id,
-    action: "rejected",
-    actorId: req.user!.userId,
-    notes: notes ?? "Ditolak",
-  });
-
-  res.json({
-    id: updated.id,
-    requesterId: updated.requesterId,
-    status: updated.status,
-    createdAt: updated.createdAt.toISOString(),
-    location: updated.location,
-    requestDate: updated.requestDate,
-    approvedBy: null,
-    approvedAt: null,
-    notes: updated.notes ?? null,
-  });
-});
-
-// Fulfill request
-router.post("/requests/:id/fulfill", requireAuth, requireRole("admin"), async (req, res) => {
-  const paramsParsed = FulfillRequestParams.safeParse(req.params);
-  if (!paramsParsed.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-
-  const { id } = paramsParsed.data;
-
-  const [updated] = await db
-    .update(requestsTable)
-    .set({ status: "fulfilled" })
-    .where(eq(requestsTable.id, id))
-    .returning();
-
-  if (!updated) {
-    res.status(404).json({ error: "Permintaan tidak ditemukan" });
-    return;
-  }
-
-  await db.insert(approvalHistoryTable).values({
-    requestId: id,
-    action: "fulfilled",
-    actorId: req.user!.userId,
-    notes: "Barang telah diserahkan",
-  });
-
-  res.json({
-    id: updated.id,
-    requesterId: updated.requesterId,
     status: updated.status,
     createdAt: updated.createdAt.toISOString(),
     location: updated.location,

@@ -15,7 +15,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, FileText, PlusCircle, CheckSquare, Package, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, FileText, PlusCircle, Package, LogOut, Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -44,9 +44,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Sidebar className="border-r border-border">
           <SidebarHeader className="p-4 border-b border-border/50">
             <div className="flex items-center gap-2">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded-md">
-                <Package className="h-5 w-5" />
-              </div>
+              <img
+                src="/logo_product.jpeg"
+                alt="Bon Barang Lapas"
+                className="h-9 w-9 rounded-md object-cover"
+              />
               <div>
                 <h1 className="font-bold text-sm tracking-tight">BON BARANG</h1>
                 <p className="text-xs text-muted-foreground">Lapas Kelas IIA</p>
@@ -87,17 +89,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
                   {(user.role === "admin" || user.role === "kalapas") && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location === "/approvals"}>
-                        <Link href="/approvals">
-                          <CheckSquare className="h-4 w-4" />
-                          <span>Persetujuan</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-
-                  {(user.role === "admin" || user.role === "kalapas") && (
-                    <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={location === "/items"}>
                         <Link href="/items">
                           <Package className="h-4 w-4" />
@@ -130,9 +121,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-14 border-b border-border flex items-center px-4 md:hidden bg-card">
+          <header className="h-14 border-b border-border flex items-center px-4 md:hidden bg-card gap-2">
             <SidebarTrigger />
-            <h1 className="font-bold text-sm ml-2">BON BARANG</h1>
+            <img src="/logo_product.jpeg" alt="Bon Barang Lapas" className="h-7 w-7 rounded-md object-cover" />
+            <h1 className="font-bold text-sm">BON BARANG</h1>
           </header>
           <div className="flex-1 overflow-y-auto p-4 md:p-8">
             {children}

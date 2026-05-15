@@ -33,9 +33,14 @@ Rules:
 - Support both Indonesian and English input
 - Return ONLY the JSON, no other text`;
 
+  if (!process.env.OPENAI_API_KEY && !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+    res.status(503).json({ error: "OPENAI_API_KEY belum dikonfigurasi di server" });
+    return;
+  }
+
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
       max_completion_tokens: 2048,
       messages: [
         { role: "system", content: systemPrompt },

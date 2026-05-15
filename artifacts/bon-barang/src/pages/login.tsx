@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -31,9 +31,11 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-4">
       <div className="mb-8 flex flex-col items-center text-center">
-        <div className="bg-primary text-primary-foreground p-3 rounded-xl mb-4">
-          <Shield className="h-8 w-8" />
-        </div>
+        <img
+          src="/logo_product.jpeg"
+          alt="Bon Barang Lapas"
+          className="h-20 w-20 rounded-2xl object-cover mb-4 shadow-sm"
+        />
         <h1 className="text-2xl font-bold tracking-tight">Sistem Informasi Bon Barang</h1>
         <p className="text-muted-foreground">Lembaga Pemasyarakatan Kelas IIA</p>
       </div>

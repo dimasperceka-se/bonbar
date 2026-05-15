@@ -12,7 +12,6 @@ import Dashboard from "@/pages/dashboard";
 import NewRequest from "@/pages/requests/new";
 import RequestsList from "@/pages/requests/index";
 import RequestDetail from "@/pages/requests/[id]";
-import Approvals from "@/pages/approvals";
 import Items from "@/pages/items";
 import Settings from "@/pages/settings";
 
@@ -59,14 +58,6 @@ function Router() {
         <ProtectedRoute>
           <AppLayout>
             <RequestDetail />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/approvals">
-        <ProtectedRoute allowedRoles={["admin", "kalapas"]}>
-          <AppLayout>
-            <Approvals />
           </AppLayout>
         </ProtectedRoute>
       </Route>

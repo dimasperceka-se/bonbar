@@ -1,33 +1,23 @@
 import { useParams, Link } from "wouter";
-import { useGetRequest, useApproveRequest, useRejectRequest, useFulfillRequest } from "@workspace/api-client-react";
-import { useAuth } from "@/lib/auth";
+import { useGetRequest } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/status-badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
-import { ArrowLeft, Check, X, PackageCheck, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetRequestQueryKey, getListRequestsQueryKey } from "@workspace/api-client-react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import { useRef, useState } from "react";
 
 export default function RequestDetail() {
   const params = useParams();
   const id = parseInt(params.id || "0", 10);
-  const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isExporting, setIsExporting] = useState(false);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const { data: request, isLoading } = useGetRequest(id);
-  
-  const approveMutation = useApproveRequest();
-  const rejectMutation = useRejectRequest();
-  const fulfillMutation = useFulfillRequest();
 
   if (isLoading) {
     return (
@@ -49,48 +39,6 @@ export default function RequestDetail() {
     );
   }
 
-  const isKalapas = user?.role === "kalapas" || user?.role === "admin";
-  const isAdmin = user?.role === "admin";
-
-  const handleApprove = () => {
-    approveMutation.mutate(
-      { id, data: { notes: "Disetujui" } },
-      {
-        onSuccess: () => {
-          toast({ title: "Bon Disetujui" });
-          queryClient.invalidateQueries({ queryKey: getGetRequestQueryKey(id) });
-          queryClient.invalidateQueries({ queryKey: getListRequestsQueryKey() });
-        }
-      }
-    );
-  };
-
-  const handleReject = () => {
-    rejectMutation.mutate(
-      { id, data: { notes: "Ditolak" } },
-      {
-        onSuccess: () => {
-          toast({ title: "Bon Ditolak", variant: "destructive" });
-          queryClient.invalidateQueries({ queryKey: getGetRequestQueryKey(id) });
-          queryClient.invalidateQueries({ queryKey: getListRequestsQueryKey() });
-        }
-      }
-    );
-  };
-
-  const handleFulfill = () => {
-    fulfillMutation.mutate(
-      { id, data: undefined },
-      {
-        onSuccess: () => {
-          toast({ title: "Bon Selesai", description: "Barang telah diserahkan." });
-          queryClient.invalidateQueries({ queryKey: getGetRequestQueryKey(id) });
-          queryClient.invalidateQueries({ queryKey: getListRequestsQueryKey() });
-        }
-      }
-    );
-  };
-
   const handleExportPDF = async () => {
     if (!pdfRef.current) return;
     setIsExporting(true);
@@ -105,6 +53,23 @@ export default function RequestDetail() {
         backgroundColor: "#ffffff",
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
+        onclone: (doc) => {
+          // html2canvas cannot parse oklch() (Tailwind v4 default). Inject
+          // a hard reset so the cloned tree only contains rgb/hex colors.
+          const style = doc.createElement("style");
+          style.textContent = `
+            .pdf-export-font, .pdf-export-font * {
+              color: rgb(0, 0, 0) !important;
+              border-color: rgb(0, 0, 0) !important;
+              text-shadow: none !important;
+              box-shadow: none !important;
+            }
+            .pdf-export-font { background-color: rgb(255, 255, 255) !important; }
+            .pdf-export-font .bg-white { background-color: rgb(255, 255, 255) !important; }
+            .pdf-export-font .bg-gray-100 { background-color: rgb(243, 244, 246) !important; }
+          `;
+          doc.head.appendChild(style);
+        },
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
@@ -155,42 +120,12 @@ export default function RequestDetail() {
             <Link href="/requests"><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold tracking-tight">Detail Permintaan #{request.id.toString().padStart(4, '0')}</h2>
-              <StatusBadge status={request.status} />
-            </div>
+            <h2 className="text-2xl font-bold tracking-tight">Detail Permintaan #{request.id.toString().padStart(4, '0')}</h2>
             <p className="text-muted-foreground">Diajukan pada {format(new Date(request.createdAt), "dd MMM yyyy HH:mm")}</p>
           </div>
         </div>
-        
-        <div className="flex gap-2">
-          {request.status === "pending" && isKalapas && (
-            <>
-              <Button 
-                variant="outline" 
-                className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200"
-                onClick={handleApprove}
-                disabled={approveMutation.isPending}
-              >
-                <Check className="h-4 w-4 mr-2" /> Setujui
-              </Button>
-              <Button 
-                variant="outline"
-                className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 border-red-200"
-                onClick={handleReject}
-                disabled={rejectMutation.isPending}
-              >
-                <X className="h-4 w-4 mr-2" /> Tolak
-              </Button>
-            </>
-          )}
-          
-          {request.status === "approved" && isAdmin && (
-            <Button onClick={handleFulfill} disabled={fulfillMutation.isPending}>
-              <PackageCheck className="h-4 w-4 mr-2" /> Tandai Selesai
-            </Button>
-          )}
 
+        <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
             {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             Export PDF
@@ -250,45 +185,35 @@ export default function RequestDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Riwayat Persetujuan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {request.approvalHistory.map((history, i) => (
-                  <div key={history.id} className="relative pl-6 pb-4 last:pb-0">
-                    <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-primary" />
-                    {i !== request.approvalHistory.length - 1 && (
-                      <div className="absolute left-[3px] top-3.5 bottom-0 w-[2px] bg-border" />
-                    )}
-                    <div className="text-sm font-medium">{history.action}</div>
-                    <div className="text-xs text-muted-foreground">Oleh: {history.actorName}</div>
-                    <div className="text-xs text-muted-foreground">{format(new Date(history.timestamp), "dd MMM yyyy HH:mm")}</div>
-                    {history.notes && (
-                      <div className="text-sm mt-1 p-2 bg-muted rounded-md italic">"{history.notes}"</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
       {/* Off-screen PDF Template — must not use display:none or html2canvas gets 0×0 */}
+      {(() => {
+        const isAdministrator = request.requesterName?.toLowerCase() === "administrator";
+        const peminta = isAdministrator ? "" : request.requesterName;
+        return (
       <div style={{ position: "fixed", left: "-9999px", top: 0, pointerEvents: "none", zIndex: -1 }}>
         <div ref={pdfRef} className="pdf-export-font p-12 bg-white text-black w-[794px] min-h-[1123px] mx-auto box-border border">
-          <div className="text-center border-b-2 border-black pb-4 mb-8">
-            <h1 className="text-xl font-bold uppercase m-0 leading-tight">KEMENTERIAN HUKUM DAN HAK ASASI MANUSIA R.I.</h1>
-            <h2 className="text-lg font-bold uppercase m-0 leading-tight">KANTOR WILAYAH JAWA BARAT</h2>
-            <h3 className="text-2xl font-bold uppercase m-0 mt-1">LEMBAGA PEMASYARAKATAN KELAS IIA KUNINGAN</h3>
-            <p className="text-sm mt-2">Jl. Siliwangi No. 123, Kuningan, Jawa Barat</p>
+          <div className="flex items-center border-b-2 border-black pb-4 mb-8 gap-4">
+            <img
+              src="/logo_instansi.png"
+              alt="Logo Instansi"
+              crossOrigin="anonymous"
+              className="h-24 w-24 object-contain shrink-0"
+            />
+            <div className="flex-1 text-center">
+              <h1 className="text-xl font-bold uppercase m-0 leading-tight">KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h1>
+              <h2 className="text-lg font-bold uppercase m-0 leading-tight">DIREKTORAT JENDERAL PEMASYARAKATAN</h2>
+              <h2 className="text-lg font-bold uppercase m-0 leading-tight">KANTOR WILAYAH JAWA BARAT</h2>
+              <h3 className="text-2xl font-bold uppercase m-0 mt-1">LEMBAGA PEMASYARAKATAN KELAS IIA KUNINGAN</h3>
+              <p className="text-sm mt-2">Jl. Siliwangi No. 123, Kuningan, Jawa Barat</p>
+            </div>
+            <div className="h-24 w-24 shrink-0" aria-hidden="true" />
           </div>
-          
+
           <div className="text-center mb-8">
             <h2 className="text-xl font-bold uppercase underline">BON BARANG</h2>
-            <p className="mt-1">Nomor: {request.id.toString().padStart(4, '0')}/BB/LapasKng/{format(new Date(request.createdAt), "yyyy")}</p>
           </div>
 
           <div className="mb-6">
@@ -297,7 +222,7 @@ export default function RequestDetail() {
                 <tr>
                   <td className="w-48 py-1">Nama Peminta</td>
                   <td className="w-4 py-1">:</td>
-                  <td className="py-1 font-medium">{request.requesterName}</td>
+                  <td className="py-1 font-medium">{peminta}</td>
                 </tr>
                 <tr>
                   <td className="py-1">Bagian/Ruangan</td>
@@ -347,20 +272,22 @@ export default function RequestDetail() {
               <p>Mengetahui,</p>
               <p className="font-bold">Kepala Lapas</p>
               <div className="h-24"></div>
-              <p className="font-bold underline">{request.approvedByName || "________________________"}</p>
+              <p className="font-bold underline">________________________</p>
               <p>NIP. .........................</p>
             </div>
-            
+
             <div className="text-center w-64">
               <p>Kuningan, {format(new Date(request.createdAt), "dd MMMM yyyy")}</p>
               <p className="font-bold">Peminta</p>
               <div className="h-24"></div>
-              <p className="font-bold underline">{request.requesterName}</p>
+              <p className="font-bold underline">{peminta || "________________________"}</p>
               <p>NIP. .........................</p>
             </div>
           </div>
         </div>
       </div>
+        );
+      })()}
 
     </div>
   );

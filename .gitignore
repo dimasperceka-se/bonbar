@@ -44,6 +44,14 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Environment
+.env
+.env.local
+
+# Caches
 .cache/
 .local/
+
+# Claude Code working dir
+.claude/
+.agents/

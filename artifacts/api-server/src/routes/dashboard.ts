@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { requestsTable, requestItemsTable, usersTable } from "@workspace/db";
-import { eq, count, sql, desc } from "drizzle-orm";
+import { eq, count, sql, desc, gte, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth.js";
 
 const router = Router();
@@ -9,44 +9,32 @@ const router = Router();
 router.get("/dashboard/summary", requireAuth, async (req, res) => {
   const { role, userId } = req.user!;
 
-  const baseWhere = role === "requester" ? eq(requestsTable.requesterId, userId) : undefined;
-
-  const [pendingRes] = await db
-    .select({ cnt: count() })
-    .from(requestsTable)
-    .where(baseWhere ? sql`${baseWhere} AND ${requestsTable.status} = 'pending'` : eq(requestsTable.status, "pending"));
+  const ownerFilter = role === "requester" ? eq(requestsTable.requesterId, userId) : undefined;
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const [approvedThisMonthRes] = await db
+
+  const thisMonthWhere = ownerFilter
+    ? and(ownerFilter, gte(requestsTable.createdAt, startOfMonth))
+    : gte(requestsTable.createdAt, startOfMonth);
+
+  const [thisMonthRes] = await db
     .select({ cnt: count() })
     .from(requestsTable)
-    .where(
-      baseWhere
-        ? sql`${baseWhere} AND ${requestsTable.status} = 'approved' AND ${requestsTable.createdAt} >= ${startOfMonth.toISOString()}`
-        : sql`${requestsTable.status} = 'approved' AND ${requestsTable.createdAt} >= ${startOfMonth.toISOString()}`
-    );
+    .where(thisMonthWhere);
 
-  const [totalRes] = await db.select({ cnt: count() }).from(requestsTable).where(baseWhere);
-
-  const [fulfilledRes] = await db
+  const [totalRes] = await db
     .select({ cnt: count() })
     .from(requestsTable)
-    .where(
-      baseWhere
-        ? sql`${baseWhere} AND ${requestsTable.status} = 'fulfilled'`
-        : eq(requestsTable.status, "fulfilled")
-    );
+    .where(ownerFilter);
 
   res.json({
-    pendingCount: Number(pendingRes?.cnt ?? 0),
-    approvedThisMonth: Number(approvedThisMonthRes?.cnt ?? 0),
+    thisMonthCount: Number(thisMonthRes?.cnt ?? 0),
     totalRequests: Number(totalRes?.cnt ?? 0),
-    fulfilledCount: Number(fulfilledRes?.cnt ?? 0),
   });
 });
 
-router.get("/dashboard/top-items", requireAuth, async (req, res) => {
+router.get("/dashboard/top-items", requireAuth, async (_req, res) => {
   const topItems = await db
     .select({
       itemName: requestItemsTable.itemName,

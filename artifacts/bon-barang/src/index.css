@@ -194,3 +194,25 @@
 .pdf-export-font {
   font-family: 'Times New Roman', Times, serif;
 }
+
+/*
+ * html2canvas (used by the PDF export) cannot parse the `oklch()` color
+ * function that Tailwind v4 emits by default. Inside the off-screen PDF
+ * template we override every Tailwind utility used with plain rgb/hex
+ * values so the rasterizer only sees colors it understands.
+ */
+.pdf-export-font,
+.pdf-export-font * {
+  color: rgb(0, 0, 0) !important;
+  border-color: rgb(0, 0, 0) !important;
+}
+
+.pdf-export-font {
+  background-color: rgb(255, 255, 255) !important;
+}
+
+.pdf-export-font .bg-white { background-color: rgb(255, 255, 255) !important; }
+.pdf-export-font .bg-gray-100 { background-color: rgb(243, 244, 246) !important; }
+.pdf-export-font .text-black { color: rgb(0, 0, 0) !important; }
+.pdf-export-font .border-black,
+.pdf-export-font .border { border-color: rgb(0, 0, 0) !important; }

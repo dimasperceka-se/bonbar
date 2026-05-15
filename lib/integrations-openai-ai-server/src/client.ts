@@ -1,18 +1,30 @@
 import OpenAI from "openai";
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?",
-  );
+let cached: OpenAI | undefined;
+
+export function getOpenAI(): OpenAI {
+  if (cached) return cached;
+
+  const apiKey = process.env.OPENAI_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const baseURL = process.env.OPENAI_BASE_URL ?? process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+
+  if (!apiKey) {
+    throw new Error(
+      "OPENAI_API_KEY must be set. Add it to your .env file or environment.",
+    );
+  }
+
+  cached = new OpenAI({
+    apiKey,
+    ...(baseURL ? { baseURL } : {}),
+  });
+  return cached;
 }
 
-if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
-  throw new Error(
-    "AI_INTEGRATIONS_OPENAI_API_KEY must be set. Did you forget to provision the OpenAI AI integration?",
-  );
-}
-
-export const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+export const openai: OpenAI = new Proxy({} as OpenAI, {
+  get(_target, prop, _receiver) {
+    const client = getOpenAI();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
 });

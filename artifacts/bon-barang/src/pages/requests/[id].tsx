@@ -188,104 +188,154 @@ export default function RequestDetail() {
         </div>
       </div>
 
-      {/* Off-screen PDF Template — must not use display:none or html2canvas gets 0×0 */}
+      {/*
+       * Off-screen PDF Template. All styles inline so it does not depend on the
+       * Tailwind utility CSS bundle (html2canvas-pro's cloned DOM sometimes
+       * loses Tailwind utilities, which collapses the layout).
+       */}
       {(() => {
         const isAdministrator = request.requesterName?.toLowerCase() === "administrator";
         const peminta = isAdministrator ? "" : request.requesterName;
+        const cellBorder: React.CSSProperties = { border: "1px solid #000", padding: "8px" };
+        const cellBorderCenter: React.CSSProperties = { ...cellBorder, textAlign: "center" };
+
         return (
-      <div style={{ position: "fixed", left: "-9999px", top: 0, pointerEvents: "none", zIndex: -1 }}>
-        <div ref={pdfRef} className="pdf-export-font p-12 bg-white text-black w-[794px] min-h-[1123px] mx-auto box-border border">
-          <div className="flex items-center border-b-2 border-black pb-4 mb-8 gap-4">
-            <img
-              src="/logo_instansi.png"
-              alt="Logo Instansi"
-              crossOrigin="anonymous"
-              className="h-24 w-24 object-contain shrink-0"
-            />
-            <div className="flex-1 text-center">
-              <h1 className="text-xl font-bold uppercase leading-snug">KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h1>
-              <h2 className="text-lg font-bold uppercase leading-snug mt-1">DIREKTORAT JENDERAL PEMASYARAKATAN</h2>
-              <h2 className="text-lg font-bold uppercase leading-snug mt-1">KANTOR WILAYAH JAWA BARAT</h2>
-              <h3 className="text-2xl font-bold uppercase leading-snug mt-2">LEMBAGA PEMASYARAKATAN KELAS IIA KUNINGAN</h3>
-              <p className="text-sm mt-2">Jl. Siliwangi No. 123, Kuningan, Jawa Barat</p>
+          <div style={{ position: "fixed", left: "-9999px", top: 0, pointerEvents: "none", zIndex: -1 }}>
+            <div
+              ref={pdfRef}
+              style={{
+                fontFamily: "'Times New Roman', Times, serif",
+                color: "#000",
+                background: "#fff",
+                width: "794px",
+                minHeight: "1123px",
+                padding: "48px",
+                boxSizing: "border-box",
+                border: "1px solid #000",
+              }}
+            >
+              {/* Header (KOP) */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  borderBottom: "2px solid #000",
+                  paddingBottom: "16px",
+                  marginBottom: "32px",
+                }}
+              >
+                <img
+                  src="/logo_instansi.png"
+                  alt="Logo Instansi"
+                  crossOrigin="anonymous"
+                  style={{
+                    width: "96px",
+                    height: "96px",
+                    objectFit: "contain",
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <h1 style={{ fontSize: "20px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: 0 }}>
+                    KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA
+                  </h1>
+                  <h2 style={{ fontSize: "18px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: "4px 0 0" }}>
+                    DIREKTORAT JENDERAL PEMASYARAKATAN
+                  </h2>
+                  <h2 style={{ fontSize: "18px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: "4px 0 0" }}>
+                    KANTOR WILAYAH JAWA BARAT
+                  </h2>
+                  <h3 style={{ fontSize: "22px", fontWeight: 700, textTransform: "uppercase", lineHeight: 1.35, margin: "8px 0 0" }}>
+                    LEMBAGA PEMASYARAKATAN KELAS IIA KUNINGAN
+                  </h3>
+                  <p style={{ fontSize: "13px", margin: "8px 0 0" }}>
+                    Jl. Siliwangi No. 123, Kuningan, Jawa Barat
+                  </p>
+                </div>
+                <div style={{ width: "96px", height: "96px", flexShrink: 0 }} aria-hidden="true" />
+              </div>
+
+              {/* Title */}
+              <div style={{ textAlign: "center", marginBottom: "32px" }}>
+                <h2 style={{ fontSize: "20px", fontWeight: 700, textTransform: "uppercase", textDecoration: "underline", margin: 0 }}>
+                  BON BARANG
+                </h2>
+              </div>
+
+              {/* Meta info */}
+              <div style={{ marginBottom: "24px" }}>
+                <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: "192px", padding: "4px 0" }}>Nama Peminta</td>
+                      <td style={{ width: "16px", padding: "4px 0" }}>:</td>
+                      <td style={{ padding: "4px 0", fontWeight: 500 }}>{peminta}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "4px 0" }}>Bagian/Ruangan</td>
+                      <td style={{ padding: "4px 0" }}>:</td>
+                      <td style={{ padding: "4px 0" }}>{request.location}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "4px 0" }}>Tanggal Dibutuhkan</td>
+                      <td style={{ padding: "4px 0" }}>:</td>
+                      <td style={{ padding: "4px 0" }}>{format(new Date(request.requestDate), "dd MMMM yyyy")}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Items table */}
+              <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", marginBottom: "48px" }}>
+                <thead>
+                  <tr style={{ background: "#f3f4f6" }}>
+                    <th style={{ ...cellBorderCenter, width: "48px", fontWeight: 700 }}>NO</th>
+                    <th style={{ ...cellBorderCenter, fontWeight: 700 }}>NAMA BARANG</th>
+                    <th style={{ ...cellBorderCenter, width: "128px", fontWeight: 700 }}>BANYAKNYA</th>
+                    <th style={{ ...cellBorderCenter, fontWeight: 700 }}>KETERANGAN</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {request.items.map((item, idx) => (
+                    <tr key={item.id}>
+                      <td style={cellBorderCenter}>{idx + 1}</td>
+                      <td style={cellBorder}>{item.itemName}</td>
+                      <td style={cellBorderCenter}>{item.quantity} {item.unit}</td>
+                      <td style={cellBorder}>{item.purpose}</td>
+                    </tr>
+                  ))}
+                  {Array.from({ length: Math.max(0, 10 - request.items.length) }).map((_, i) => (
+                    <tr key={`empty-${i}`} style={{ height: "32px" }}>
+                      <td style={cellBorder}></td>
+                      <td style={cellBorder}></td>
+                      <td style={cellBorder}></td>
+                      <td style={cellBorder}></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Signature blocks */}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "48px", padding: "0 32px" }}>
+                <div style={{ textAlign: "center", width: "256px" }}>
+                  <p style={{ margin: 0 }}>Mengetahui,</p>
+                  <p style={{ margin: 0, fontWeight: 700 }}>Kepala Lapas</p>
+                  <div style={{ height: "96px" }}></div>
+                  <p style={{ margin: 0, fontWeight: 700, textDecoration: "underline" }}>________________________</p>
+                  <p style={{ margin: 0 }}>NIP. .........................</p>
+                </div>
+
+                <div style={{ textAlign: "center", width: "256px" }}>
+                  <p style={{ margin: 0 }}>Kuningan, {format(new Date(request.createdAt), "dd MMMM yyyy")}</p>
+                  <p style={{ margin: 0, fontWeight: 700 }}>Peminta</p>
+                  <div style={{ height: "96px" }}></div>
+                  <p style={{ margin: 0, fontWeight: 700, textDecoration: "underline" }}>{peminta || "________________________"}</p>
+                  <p style={{ margin: 0 }}>NIP. .........................</p>
+                </div>
+              </div>
             </div>
-            <div className="h-24 w-24 shrink-0" aria-hidden="true" />
           </div>
-
-          <div className="text-center mb-8">
-            <h2 className="text-xl font-bold uppercase underline">BON BARANG</h2>
-          </div>
-
-          <div className="mb-6">
-            <table className="w-full text-left">
-              <tbody>
-                <tr>
-                  <td className="w-48 py-1">Nama Peminta</td>
-                  <td className="w-4 py-1">:</td>
-                  <td className="py-1 font-medium">{peminta}</td>
-                </tr>
-                <tr>
-                  <td className="py-1">Bagian/Ruangan</td>
-                  <td className="py-1">:</td>
-                  <td className="py-1">{request.location}</td>
-                </tr>
-                <tr>
-                  <td className="py-1">Tanggal Dibutuhkan</td>
-                  <td className="py-1">:</td>
-                  <td className="py-1">{format(new Date(request.requestDate), "dd MMMM yyyy")}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <table className="w-full border-collapse border border-black mb-12">
-            <thead>
-              <tr className="bg-gray-100 border border-black">
-                <th className="border border-black p-2 text-center w-12 font-bold">NO</th>
-                <th className="border border-black p-2 text-center font-bold">NAMA BARANG</th>
-                <th className="border border-black p-2 text-center w-32 font-bold">BANYAKNYA</th>
-                <th className="border border-black p-2 text-center font-bold">KETERANGAN</th>
-              </tr>
-            </thead >
-            <tbody>
-              {request.items.map((item, idx) => (
-                <tr key={item.id} className="border border-black">
-                  <td className="border border-black p-2 text-center">{idx + 1}</td>
-                  <td className="border border-black p-2">{item.itemName}</td>
-                  <td className="border border-black p-2 text-center">{item.quantity} {item.unit}</td>
-                  <td className="border border-black p-2">{item.purpose}</td>
-                </tr>
-              ))}
-              {Array.from({ length: Math.max(0, 10 - request.items.length) }).map((_, i) => (
-                <tr key={`empty-${i}`} className="border border-black h-8">
-                  <td className="border border-black p-2"></td>
-                  <td className="border border-black p-2"></td>
-                  <td className="border border-black p-2"></td>
-                  <td className="border border-black p-2"></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-between mt-12 px-8">
-            <div className="text-center w-64">
-              <p>Mengetahui,</p>
-              <p className="font-bold">Kepala Lapas</p>
-              <div className="h-24"></div>
-              <p className="font-bold underline">________________________</p>
-              <p>NIP. .........................</p>
-            </div>
-
-            <div className="text-center w-64">
-              <p>Kuningan, {format(new Date(request.createdAt), "dd MMMM yyyy")}</p>
-              <p className="font-bold">Peminta</p>
-              <div className="h-24"></div>
-              <p className="font-bold underline">{peminta || "________________________"}</p>
-              <p>NIP. .........................</p>
-            </div>
-          </div>
-        </div>
-      </div>
         );
       })()}
 

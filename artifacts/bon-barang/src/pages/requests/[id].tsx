@@ -94,34 +94,54 @@ export default function RequestDetail() {
   const handleExportPDF = async () => {
     if (!pdfRef.current) return;
     setIsExporting(true);
-    
+
     try {
       const element = pdfRef.current;
-      element.style.display = "block"; // Make visible temporarily if it was hidden
-      
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
       });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Bon_Barang_${request.id.toString().padStart(4, '0')}.pdf`);
-      
-      element.style.display = "none";
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgAspect = canvas.height / canvas.width;
+      const imgHeightOnPage = pdfWidth * imgAspect;
+
+      if (imgHeightOnPage <= pdfHeight) {
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeightOnPage);
+      } else {
+        let yOffset = 0;
+        let remaining = canvas.height;
+        while (remaining > 0) {
+          const sliceHeight = Math.min(
+            Math.round((pdfHeight / pdfWidth) * canvas.width),
+            remaining
+          );
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceHeight;
+          const ctx = sliceCanvas.getContext("2d")!;
+          ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+          const sliceData = sliceCanvas.toDataURL("image/jpeg", 0.95);
+          if (yOffset > 0) pdf.addPage();
+          pdf.addImage(sliceData, "JPEG", 0, 0, pdfWidth, (sliceHeight * pdfWidth) / canvas.width);
+          yOffset += sliceHeight;
+          remaining -= sliceHeight;
+        }
+      }
+
+      pdf.save(`Bon_Barang_${request.id.toString().padStart(4, "0")}.pdf`);
     } catch (err) {
-      toast({ title: "Gagal Export PDF", variant: "destructive" });
-      console.error(err);
+      toast({ title: "Gagal Export PDF", description: String(err), variant: "destructive" });
+      console.error("PDF export error:", err);
     } finally {
       setIsExporting(false);
     }
@@ -256,9 +276,9 @@ export default function RequestDetail() {
         </div>
       </div>
 
-      {/* Hidden PDF Template */}
-      <div style={{ display: 'none' }}>
-        <div ref={pdfRef} className="pdf-export-font p-12 bg-white text-black w-[210mm] min-h-[297mm] mx-auto box-border border">
+      {/* Off-screen PDF Template — must not use display:none or html2canvas gets 0×0 */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0, pointerEvents: "none", zIndex: -1 }}>
+        <div ref={pdfRef} className="pdf-export-font p-12 bg-white text-black w-[794px] min-h-[1123px] mx-auto box-border border">
           <div className="text-center border-b-2 border-black pb-4 mb-8">
             <h1 className="text-xl font-bold uppercase m-0 leading-tight">KEMENTERIAN HUKUM DAN HAK ASASI MANUSIA R.I.</h1>
             <h2 className="text-lg font-bold uppercase m-0 leading-tight">KANTOR WILAYAH JAWA BARAT</h2>

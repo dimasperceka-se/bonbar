@@ -93,15 +93,6 @@ export default function Login() {
           </CardFooter>
         </form>
       </Card>
-      
-      <div className="mt-8 text-center text-sm text-muted-foreground max-w-md">
-        <p className="mb-2">Demo Accounts:</p>
-        <div className="grid grid-cols-3 gap-4">
-          <div><strong className="block">Admin</strong>admin / admin123</div>
-          <div><strong className="block">Kalapas</strong>kalapas / kalapas123</div>
-          <div><strong className="block">Peminta</strong>user / user123</div>
-        </div>
-      </div>
     </div>
   );
 }

@@ -4,8 +4,9 @@ import {
   requestsTable,
   requestItemsTable,
   usersTable,
+  itemsTable,
 } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import {
   CreateRequestBody,
   UpdateRequestBody,
@@ -100,6 +101,16 @@ router.post("/requests", requireAuth, async (req, res) => {
         purpose: item.purpose,
       }))
     );
+
+    // Deduct stock for each item that exists in the master.
+    for (const item of items) {
+      const qty = Number.parseInt(item.quantity, 10);
+      if (!Number.isFinite(qty) || qty <= 0) continue;
+      await db
+        .update(itemsTable)
+        .set({ currentStock: sql`COALESCE(${itemsTable.currentStock}, 0) - ${qty}` })
+        .where(eq(itemsTable.name, item.itemName));
+    }
   }
 
   const [requester] = await db

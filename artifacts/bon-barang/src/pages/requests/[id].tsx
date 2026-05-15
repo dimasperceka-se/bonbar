@@ -203,10 +203,10 @@ export default function RequestDetail() {
               className="h-24 w-24 object-contain shrink-0"
             />
             <div className="flex-1 text-center">
-              <h1 className="text-xl font-bold uppercase m-0 leading-tight">KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h1>
-              <h2 className="text-lg font-bold uppercase m-0 leading-tight">DIREKTORAT JENDERAL PEMASYARAKATAN</h2>
-              <h2 className="text-lg font-bold uppercase m-0 leading-tight">KANTOR WILAYAH JAWA BARAT</h2>
-              <h3 className="text-2xl font-bold uppercase m-0 mt-1">LEMBAGA PEMASYARAKATAN KELAS IIA KUNINGAN</h3>
+              <h1 className="text-xl font-bold uppercase leading-snug">KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN REPUBLIK INDONESIA</h1>
+              <h2 className="text-lg font-bold uppercase leading-snug mt-1">DIREKTORAT JENDERAL PEMASYARAKATAN</h2>
+              <h2 className="text-lg font-bold uppercase leading-snug mt-1">KANTOR WILAYAH JAWA BARAT</h2>
+              <h3 className="text-2xl font-bold uppercase leading-snug mt-2">LEMBAGA PEMASYARAKATAN KELAS IIA KUNINGAN</h3>
               <p className="text-sm mt-2">Jl. Siliwangi No. 123, Kuningan, Jawa Barat</p>
             </div>
             <div className="h-24 w-24 shrink-0" aria-hidden="true" />

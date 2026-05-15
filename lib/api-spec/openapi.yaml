@@ -69,6 +69,23 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Unauthorized
+    patch:
+      operationId: updateProfile
+      tags: [auth]
+      summary: Update current user profile (fullName / section)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfile"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
 
   /dashboard/summary:
     get:
@@ -309,6 +326,14 @@ components:
         username:
           type: string
         password:
+          type: string
+
+    UpdateProfile:
+      type: object
+      properties:
+        fullName:
+          type: string
+        section:
           type: string
 
     AuthResponse:

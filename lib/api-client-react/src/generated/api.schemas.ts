@@ -14,6 +14,11 @@ export interface LoginInput {
   password: string;
 }
 
+export interface UpdateProfile {
+  fullName?: string;
+  section?: string;
+}
+
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 

@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { LoginBody } from "@workspace/api-zod";
+import { LoginBody, UpdateProfileBody } from "@workspace/api-zod";
 import { requireAuth, signToken } from "../middlewares/auth.js";
 
 const router = Router();
@@ -52,6 +52,43 @@ router.get("/auth/me", requireAuth, async (req, res) => {
     role: user.role,
     section: user.section,
     signatureUrl: user.signatureUrl ?? null,
+  });
+});
+
+router.patch("/auth/me", requireAuth, async (req, res) => {
+  const parsed = UpdateProfileBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (parsed.data.fullName !== undefined) updateData.fullName = parsed.data.fullName.trim();
+  if (parsed.data.section !== undefined) updateData.section = parsed.data.section.trim();
+
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set(updateData)
+    .where(eq(usersTable.id, req.user!.userId))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  res.json({
+    id: updated.id,
+    username: updated.username,
+    fullName: updated.fullName,
+    role: updated.role,
+    section: updated.section,
+    signatureUrl: updated.signatureUrl ?? null,
   });
 });
 

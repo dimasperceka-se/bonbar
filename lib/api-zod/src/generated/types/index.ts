@@ -26,5 +26,6 @@ export * from './requestItemInput';
 export * from './requestSummary';
 export * from './requestUpdate';
 export * from './topItem';
+export * from './updateProfile';
 export * from './user';
 export * from './userRole';

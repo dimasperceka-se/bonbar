@@ -51,6 +51,24 @@ export const GetMeResponse = zod.object({
 
 
 /**
+ * @summary Update current user profile (fullName / section)
+ */
+export const UpdateProfileBody = zod.object({
+  "fullName": zod.string().optional(),
+  "section": zod.string().optional()
+})
+
+export const UpdateProfileResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "fullName": zod.string(),
+  "role": zod.enum(['admin', 'kalapas', 'requester']),
+  "section": zod.string(),
+  "signatureUrl": zod.string().nullish()
+})
+
+
+/**
  * @summary Get dashboard stats summary
  */
 export const GetDashboardSummaryResponse = zod.object({
